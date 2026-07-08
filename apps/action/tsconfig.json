@@ -6,5 +6,5 @@
     "rootDir": "src"
   },
   "include": ["src/**/*.ts"],
-  "references": [{ "path": "../../packages/engine" }, { "path": "../../packages/extract" }]
+  "references": [{ "path": "../../packages/engine" }]
 }

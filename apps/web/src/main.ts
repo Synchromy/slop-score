@@ -4,6 +4,7 @@ import {
   type GradeBand,
   type Report,
 } from "@synchromy/slop-score-engine";
+import { extractUrlText } from "@synchromy/slop-score-extract";
 import type { PackId } from "@synchromy/slop-score-rules";
 
 const sampleText =
@@ -33,7 +34,12 @@ function mount(): void {
             </div>
             <div class="score-pill" id="score-pill">100</div>
           </div>
+          <div class="url-row">
+            <input id="url-input" type="url" placeholder="https://example.com" aria-label="URL to score" />
+            <button id="url-button" type="button">Fetch URL</button>
+          </div>
           <textarea id="copy-input" spellcheck="true" aria-label="Paste copy to score"></textarea>
+          <p class="status-line" id="status-line"></p>
           <div class="toolbar">
             <label class="toggle">
               <input id="synchromy-pack" type="checkbox" />
@@ -49,13 +55,27 @@ function mount(): void {
   `;
 
   const input = root.querySelector<HTMLTextAreaElement>("#copy-input");
+  const urlInput = root.querySelector<HTMLInputElement>("#url-input");
+  const urlButton = root.querySelector<HTMLButtonElement>("#url-button");
   const synchromyPack = root.querySelector<HTMLInputElement>("#synchromy-pack");
   const sampleButton = root.querySelector<HTMLButtonElement>("#sample-button");
   const shareButton = root.querySelector<HTMLButtonElement>("#share-button");
   const reportPane = root.querySelector<HTMLDivElement>("#report-pane");
   const scorePill = root.querySelector<HTMLDivElement>("#score-pill");
 
-  if (!input || !synchromyPack || !sampleButton || !shareButton || !reportPane || !scorePill)
+  const statusLine = root.querySelector<HTMLParagraphElement>("#status-line");
+
+  if (
+    !input ||
+    !urlInput ||
+    !urlButton ||
+    !synchromyPack ||
+    !sampleButton ||
+    !shareButton ||
+    !reportPane ||
+    !scorePill ||
+    !statusLine
+  )
     return;
 
   const shared = readShareState();
@@ -74,7 +94,24 @@ function mount(): void {
   synchromyPack.addEventListener("change", analyze);
   sampleButton.addEventListener("click", () => {
     input.value = sampleText;
+    statusLine.textContent = "";
     analyze();
+  });
+  urlButton.addEventListener("click", async () => {
+    const url = urlInput.value.trim();
+    if (!url) return;
+    urlButton.disabled = true;
+    statusLine.textContent = "Fetching URL";
+    try {
+      const blocks = await extractUrlText(url);
+      input.value = blocks.map((block) => block.text).join("\n\n");
+      statusLine.textContent = blocks.length > 0 ? "URL text extracted" : "No prose found";
+      analyze();
+    } catch (error) {
+      statusLine.textContent = error instanceof Error ? error.message : "URL fetch failed";
+    } finally {
+      urlButton.disabled = false;
+    }
   });
   shareButton.addEventListener("click", async () => {
     const state: ShareState = { text: input.value, packs: selectedPacks(synchromyPack.checked) };

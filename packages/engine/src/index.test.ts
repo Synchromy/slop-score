@@ -56,6 +56,16 @@ describe("report surface", () => {
     );
   });
 
+  it("detects the M2 URL-mode heuristics", () => {
+    const report = analyzeText(
+      "Teams use the Signal Fabric to win, driving alignment, enabling growth. Ship better 🙂",
+    );
+
+    assert.ok(report.findings.some((finding) => finding.ruleId === "density.title-case-nouns"));
+    assert.ok(report.findings.some((finding) => finding.ruleId === "padding.ing-tail"));
+    assert.ok(report.findings.some((finding) => finding.ruleId === "emoji.any-advisory"));
+  });
+
   it("layers the Synchromy pack on top of universal rules", () => {
     const report = analyzeText("We optimize everything 🙂", { packs: ["synchromy"] });
 

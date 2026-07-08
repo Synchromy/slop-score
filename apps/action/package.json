@@ -1,16 +1,15 @@
 {
-  "name": "@synchromy/slop-score-web",
+  "name": "@synchromy/slop-score-action",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "vite build",
-    "dev": "vite --host 127.0.0.1",
+    "build": "tsc -b",
+    "score": "node dist/main.js",
     "typecheck": "tsc -b --pretty false"
   },
   "dependencies": {
     "@synchromy/slop-score-engine": "workspace:*",
-    "@synchromy/slop-score-extract": "workspace:*",
     "@synchromy/slop-score-rules": "workspace:*"
   }
 }

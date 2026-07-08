@@ -1,0 +1,31 @@
+name: "Slop Score"
+description: "Run the deterministic Slop Score engine over repository prose."
+inputs:
+  path:
+    description: "File or directory to score."
+    default: "."
+  threshold:
+    description: "Minimum allowed grade for each scored file."
+    default: "70"
+  packs:
+    description: "Comma-separated packs: universal or universal,synchromy."
+    default: "universal"
+runs:
+  using: "composite"
+  steps:
+    - name: Enable Corepack
+      shell: bash
+      run: corepack enable
+    - name: Install dependencies
+      shell: bash
+      run: corepack pnpm install --frozen-lockfile
+    - name: Build action
+      shell: bash
+      run: corepack pnpm --filter @synchromy/slop-score-action build
+    - name: Score prose
+      shell: bash
+      run: >
+        corepack pnpm --filter @synchromy/slop-score-action score --
+        --path "${{ inputs.path }}"
+        --threshold "${{ inputs.threshold }}"
+        --packs "${{ inputs.packs }}"

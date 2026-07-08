@@ -98,6 +98,7 @@ function runRule(rule: SlopRule, text: string): Finding[] {
   if (rule.id === "cadence.fragment-staccato") return findFragmentCadence(rule, text);
   if (rule.id === "density.forced-threes") return findForcedThrees(rule, text);
   if (rule.id === "density.hedge-stacking") return findHedgeStacking(rule, text);
+  if (rule.id === "density.title-case-nouns") return findTitleCaseNouns(rule, text);
 
   if (rule.kind === "phrase") return findPhrase(rule, text);
   if (rule.kind === "regex") return findRegex(rule, text);
@@ -185,6 +186,22 @@ function findHedgeStacking(rule: SlopRule, text: string): Finding[] {
   );
   const perHundredWords = (matches.length / Math.max(countWords(text), 1)) * 100;
   if (perHundredWords < (rule.threshold ?? 2)) return [];
+  return matches;
+}
+
+function findTitleCaseNouns(rule: SlopRule, text: string): Finding[] {
+  const pattern = rule.pattern;
+  if (!pattern) return [];
+  const sentenceStartIndexes = new Set(
+    sentences(text).map(
+      (sentence) => sentence.start + (sentence.text.match(/^\s*/)?.[0].length ?? 0),
+    ),
+  );
+  const matches = collectMatches(new RegExp(pattern, "gu"), text)
+    .filter(([start]) => !sentenceStartIndexes.has(start))
+    .map(([start, end]) => finding(rule, text, start, end));
+  const perHundredWords = (matches.length / Math.max(countWords(text), 1)) * 100;
+  if (perHundredWords < (rule.threshold ?? 1)) return [];
   return matches;
 }
 
