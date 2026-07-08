@@ -1,0 +1,16 @@
+{
+  "name": "@synchromy/slop-score-api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -b",
+    "dev": "node dist/index.js",
+    "typecheck": "tsc -b --pretty false"
+  },
+  "dependencies": {
+    "@synchromy/slop-score-engine": "workspace:*",
+    "@synchromy/slop-score-extract": "workspace:*",
+    "@synchromy/slop-score-rules": "workspace:*"
+  }
+}

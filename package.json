@@ -6,11 +6,11 @@
   "packageManager": "pnpm@11.9.0",
   "license": "MIT",
   "scripts": {
-    "build": "tsc -b packages/rules packages/engine packages/extract apps/web apps/action && corepack pnpm --filter @synchromy/slop-score-web build",
+    "build": "tsc -b packages/rules packages/engine packages/extract apps/web apps/action services/api && corepack pnpm --filter @synchromy/slop-score-web build",
     "format": "prettier --check .",
     "lint": "eslint .",
-    "test": "tsc -b packages/rules packages/engine packages/extract apps/web apps/action && node --test \"packages/*/dist/**/*.test.js\"",
-    "typecheck": "tsc -b packages/rules packages/engine packages/extract apps/web apps/action"
+    "test": "tsc -b packages/rules packages/engine packages/extract apps/web apps/action services/api && node --test \"packages/*/dist/**/*.test.js\" \"services/*/dist/**/*.test.js\"",
+    "typecheck": "tsc -b packages/rules packages/engine packages/extract apps/web apps/action services/api"
   },
   "devDependencies": {
     "@eslint/js": "^9.31.0",

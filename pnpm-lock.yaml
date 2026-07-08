@@ -68,6 +68,18 @@ importers:
         specifier: ^3.25.76
         version: 3.25.76
 
+  services/api:
+    dependencies:
+      "@synchromy/slop-score-engine":
+        specifier: workspace:*
+        version: link:../../packages/engine
+      "@synchromy/slop-score-extract":
+        specifier: workspace:*
+        version: link:../../packages/extract
+      "@synchromy/slop-score-rules":
+        specifier: workspace:*
+        version: link:../../packages/rules
+
 packages:
   "@esbuild/aix-ppc64@0.28.1":
     resolution:

@@ -40,6 +40,10 @@ function mount(): void {
           </div>
           <textarea id="copy-input" spellcheck="true" aria-label="Paste copy to score"></textarea>
           <p class="status-line" id="status-line"></p>
+          <div class="lead-row">
+            <input id="email-input" type="email" placeholder="founder@example.com" aria-label="Email for report follow-up" />
+            <button id="lead-button" type="button">Save Lead</button>
+          </div>
           <div class="toolbar">
             <label class="toggle">
               <input id="synchromy-pack" type="checkbox" />
@@ -57,6 +61,8 @@ function mount(): void {
   const input = root.querySelector<HTMLTextAreaElement>("#copy-input");
   const urlInput = root.querySelector<HTMLInputElement>("#url-input");
   const urlButton = root.querySelector<HTMLButtonElement>("#url-button");
+  const emailInput = root.querySelector<HTMLInputElement>("#email-input");
+  const leadButton = root.querySelector<HTMLButtonElement>("#lead-button");
   const synchromyPack = root.querySelector<HTMLInputElement>("#synchromy-pack");
   const sampleButton = root.querySelector<HTMLButtonElement>("#sample-button");
   const shareButton = root.querySelector<HTMLButtonElement>("#share-button");
@@ -69,6 +75,8 @@ function mount(): void {
     !input ||
     !urlInput ||
     !urlButton ||
+    !emailInput ||
+    !leadButton ||
     !synchromyPack ||
     !sampleButton ||
     !shareButton ||
@@ -82,9 +90,12 @@ function mount(): void {
   input.value = shared?.text ?? "";
   synchromyPack.checked = shared?.packs.includes("synchromy") ?? false;
 
+  let currentReport = analyzeText(input.value, { packs: selectedPacks(synchromyPack.checked) });
+
   const analyze = (): void => {
     const packs = selectedPacks(synchromyPack.checked);
     const report = analyzeText(input.value, { packs });
+    currentReport = report;
     scorePill.textContent = String(report.grade);
     scorePill.dataset.band = report.band;
     reportPane.innerHTML = renderReport(input.value, report);
@@ -122,6 +133,23 @@ function mount(): void {
     setTimeout(() => {
       shareButton.textContent = "Share";
     }, 1200);
+  });
+  leadButton.addEventListener("click", () => {
+    const email = emailInput.value.trim();
+    if (!email.includes("@")) {
+      statusLine.textContent = "Enter an email";
+      return;
+    }
+    const lead = {
+      email,
+      grade: currentReport.grade,
+      band: currentReport.band,
+      sourceUrl: urlInput.value.trim() || undefined,
+      capturedAt: new Date().toISOString(),
+    };
+    const existing = JSON.parse(localStorage.getItem("slop-score-leads") ?? "[]") as unknown[];
+    localStorage.setItem("slop-score-leads", JSON.stringify([...existing, lead]));
+    statusLine.textContent = "Saved locally";
   });
 
   analyze();
