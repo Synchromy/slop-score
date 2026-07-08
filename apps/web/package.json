@@ -4,7 +4,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsc -b",
+    "build": "vite build",
+    "dev": "vite --host 127.0.0.1",
     "typecheck": "tsc -b --pretty false"
+  },
+  "dependencies": {
+    "@synchromy/slop-score-engine": "workspace:*",
+    "@synchromy/slop-score-rules": "workspace:*"
   }
 }
