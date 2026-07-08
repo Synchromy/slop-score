@@ -1,0 +1,10 @@
+{
+  "name": "@synchromy/slop-score-web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b --pretty false"
+  }
+}
