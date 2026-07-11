@@ -10,6 +10,10 @@ import type { PackId } from "@synchromy/slop-score-rules";
 const sampleText =
   "Additionally, our seamless AI-powered everything helps teams move the needle. It works. Fast. Everywhere. The platform is simple, scalable, and magical. Arguably, it is useful to some extent.";
 
+// Empty string resolves to same-origin, which is how the API/web app are deployed together.
+const API_BASE =
+  (import.meta as unknown as { env?: { VITE_API_BASE?: string } }).env?.VITE_API_BASE ?? "";
+
 type ShareState = {
   text: string;
   packs: PackId[];
@@ -134,22 +138,40 @@ function mount(): void {
       shareButton.textContent = "Share";
     }, 1200);
   });
-  leadButton.addEventListener("click", () => {
+  leadButton.addEventListener("click", async () => {
     const email = emailInput.value.trim();
     if (!email.includes("@")) {
       statusLine.textContent = "Enter an email";
       return;
     }
-    const lead = {
-      email,
-      grade: currentReport.grade,
-      band: currentReport.band,
-      sourceUrl: urlInput.value.trim() || undefined,
-      capturedAt: new Date().toISOString(),
-    };
-    const existing = JSON.parse(localStorage.getItem("slop-score-leads") ?? "[]") as unknown[];
-    localStorage.setItem("slop-score-leads", JSON.stringify([...existing, lead]));
-    statusLine.textContent = "Saved locally";
+
+    const sourceUrl = urlInput.value.trim() || undefined;
+    const grade = currentReport.grade;
+
+    leadButton.disabled = true;
+    statusLine.textContent = "Saving";
+    try {
+      const response = await fetch(`${API_BASE}/leads`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ email, sourceUrl, grade }),
+      });
+      if (!response.ok) throw new Error(`request failed: ${response.status}`);
+      statusLine.textContent = "Saved";
+    } catch {
+      const lead = {
+        email,
+        grade,
+        band: currentReport.band,
+        sourceUrl,
+        capturedAt: new Date().toISOString(),
+      };
+      const existing = JSON.parse(localStorage.getItem("slop-score-leads") ?? "[]") as unknown[];
+      localStorage.setItem("slop-score-leads", JSON.stringify([...existing, lead]));
+      statusLine.textContent = "Saved locally";
+    } finally {
+      leadButton.disabled = false;
+    }
   });
 
   analyze();

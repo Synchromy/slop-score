@@ -3,10 +3,16 @@ import {
   type IncomingMessage,
   type ServerResponse,
 } from "node:http";
+import { createReadStream, existsSync, statSync } from "node:fs";
+import { extname, join, resolve, sep } from "node:path";
 
 import { analyzeText, type Report } from "@synchromy/slop-score-engine";
 import { extractUrlText, type FetchLike } from "@synchromy/slop-score-extract";
 import type { PackId } from "@synchromy/slop-score-rules";
+
+import type { LeadStore, StoredLead } from "./lead-store.js";
+
+export type { LeadStore, StoredLead } from "./lead-store.js";
 
 export type ApiOptions = {
   apiToken?: string;
@@ -15,6 +21,8 @@ export type ApiOptions = {
     maxRequests: number;
     windowMs: number;
   };
+  leadStore?: LeadStore;
+  staticDir?: string;
 };
 
 type ScoreRequest = {
@@ -29,17 +37,21 @@ type LeadRequest = {
   grade?: number;
 };
 
-type StoredLead = {
-  email: string;
-  sourceUrl?: string;
-  grade?: number;
-  capturedAt: string;
-};
-
 const leads: StoredLead[] = [];
+
+/** In-memory LeadStore backing the default (no store injected) behavior. */
+const defaultLeadStore: LeadStore = {
+  add(lead) {
+    leads.push(lead);
+  },
+  all() {
+    return leads;
+  },
+};
 
 export function createApiServer(options: ApiOptions = {}) {
   const limiter = createRateLimiter(options.rateLimit);
+  const leadStore = options.leadStore ?? defaultLeadStore;
 
   return createHttpServer(async (request, response) => {
     try {
@@ -63,7 +75,16 @@ export function createApiServer(options: ApiOptions = {}) {
       if (request.method === "POST" && request.url === "/leads") {
         if (!authorized(request, options.apiToken))
           return json(response, 401, { error: "unauthorized" });
-        return json(response, 201, captureLead(await readJson<LeadRequest>(request)));
+        return json(
+          response,
+          201,
+          captureLead(await readJson<LeadRequest>(request), leadStore),
+        );
+      }
+
+      if (request.method === "GET" && options.staticDir) {
+        const served = serveStatic(options.staticDir, request.url ?? "/", response);
+        if (served) return;
       }
 
       return json(response, 404, { error: "not_found" });
@@ -83,7 +104,7 @@ export async function scoreRequest(body: ScoreRequest, fetcher?: FetchLike): Pro
   throw new Error("text or url is required");
 }
 
-export function captureLead(body: LeadRequest): StoredLead {
+export function captureLead(body: LeadRequest, store: LeadStore = defaultLeadStore): StoredLead {
   if (!body.email?.includes("@")) throw new Error("valid email is required");
   const lead: StoredLead = {
     email: body.email.trim(),
@@ -91,12 +112,12 @@ export function captureLead(body: LeadRequest): StoredLead {
     ...(typeof body.grade === "number" ? { grade: body.grade } : {}),
     capturedAt: new Date().toISOString(),
   };
-  leads.push(lead);
+  store.add(lead);
   return lead;
 }
 
 export function storedLeads(): readonly StoredLead[] {
-  return leads;
+  return defaultLeadStore.all();
 }
 
 function normalizePacks(packs: readonly PackId[] | undefined): PackId[] {
@@ -152,4 +173,44 @@ function corsHeaders(): Record<string, string> {
     "access-control-allow-headers": "authorization, content-type",
     "access-control-allow-methods": "GET, POST, OPTIONS",
   };
+}
+
+const STATIC_CONTENT_TYPES: Record<string, string> = {
+  ".html": "text/html; charset=utf-8",
+  ".js": "text/javascript; charset=utf-8",
+  ".css": "text/css; charset=utf-8",
+  ".svg": "image/svg+xml",
+  ".json": "application/json; charset=utf-8",
+  ".ico": "image/x-icon",
+};
+
+/**
+ * Serves a file from `staticDir` for a GET request, falling back to
+ * `index.html` (SPA-style) when the requested path has no matching file.
+ * Returns false (and writes nothing) if neither the requested file nor the
+ * index.html fallback exists, so the caller can fall through to a 404.
+ */
+function serveStatic(staticDir: string, requestUrl: string, response: ServerResponse): boolean {
+  const root = resolve(staticDir);
+  let pathname = "/";
+  try {
+    pathname = decodeURIComponent(requestUrl.split("?")[0] ?? "/");
+  } catch {
+    pathname = requestUrl.split("?")[0] ?? "/";
+  }
+
+  const requested = resolve(root, `.${pathname}`);
+  const withinRoot = requested === root || requested.startsWith(root + sep);
+
+  const filePath =
+    withinRoot && existsSync(requested) && statSync(requested).isFile()
+      ? requested
+      : join(root, "index.html");
+
+  if (!existsSync(filePath) || !statSync(filePath).isFile()) return false;
+
+  const contentType = STATIC_CONTENT_TYPES[extname(filePath)] ?? "application/octet-stream";
+  response.writeHead(200, { "content-type": contentType, ...corsHeaders() });
+  createReadStream(filePath).pipe(response);
+  return true;
 }
