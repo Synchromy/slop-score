@@ -236,6 +236,58 @@
         background: #ffe28a;
       }
 
+      mark[data-finding] {
+        cursor: pointer;
+      }
+
+      .finding-badge {
+        margin-left: 2px;
+        border: 1px solid #1f2528;
+        border-radius: 999px;
+        padding: 0 4px;
+        color: #1f2528;
+        background: #fffdf7;
+        font-size: 9px;
+        font-weight: 800;
+        line-height: 1.5;
+        vertical-align: super;
+      }
+
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 16px;
+        border: 2px solid #1f2528;
+        border-radius: 8px;
+        padding: 10px 14px;
+        background: #fffdf7;
+        color: #38413d;
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .legend-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+      }
+
+      .legend-swatch {
+        display: inline-block;
+        width: 14px;
+        height: 14px;
+        border: 1px solid #1f2528;
+        border-radius: 4px;
+      }
+
+      .legend-swatch[data-severity="fail"] {
+        background: #ffb2a3;
+      }
+
+      .legend-swatch[data-severity="warn"] {
+        background: #ffe28a;
+      }
+
       .findings {
         display: grid;
         gap: 10px;
@@ -243,10 +295,35 @@
 
       .finding {
         padding: 14px;
+        transition:
+          box-shadow 0.3s ease,
+          border-color 0.3s ease;
+      }
+
+      .finding--flash {
+        border-color: #1f2528;
+        box-shadow: 0 0 0 4px #f8c85c;
       }
 
       .finding strong {
+        display: inline-flex;
+        align-items: center;
         overflow-wrap: anywhere;
+      }
+
+      .finding-number {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 20px;
+        height: 20px;
+        margin-right: 7px;
+        padding: 0 5px;
+        border: 1px solid #1f2528;
+        border-radius: 999px;
+        background: #f4f1e8;
+        font-size: 11px;
+        font-weight: 800;
       }
 
       .finding span {
@@ -285,6 +362,11 @@
 
         h1 {
           font-size: 32px;
+        }
+
+        .legend {
+          gap: 6px 12px;
+          font-size: 12px;
         }
       }
     </style>

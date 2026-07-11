@@ -148,6 +148,18 @@ function mount(): void {
       shareButton.textContent = "Share";
     }, 1200);
   });
+  reportPane.addEventListener("click", (event) => {
+    const target = event.target as HTMLElement | null;
+    const mark = target?.closest('mark[data-finding]');
+    if (!mark) return;
+    const idx = mark.getAttribute("data-finding");
+    if (idx === null) return;
+    const card = document.getElementById(`finding-${idx}`);
+    if (!card) return;
+    card.scrollIntoView({ behavior: "smooth", block: "center" });
+    card.classList.add("finding--flash");
+    setTimeout(() => card.classList.remove("finding--flash"), 1200);
+  });
   leadButton.addEventListener("click", async () => {
     const email = emailInput.value.trim();
     if (!email.includes("@")) {
@@ -200,6 +212,16 @@ function renderReport(text: string, report: Report): string {
     `;
   }
 
+  const legend =
+    report.findings.length === 0
+      ? ""
+      : `
+    <div class="legend">
+      <span class="legend-item"><span class="legend-swatch" data-severity="fail"></span>Fail — a slop tell that counts against the score</span>
+      <span class="legend-item"><span class="legend-swatch" data-severity="warn"></span>Warn — an earned-use word to double-check</span>
+    </div>
+  `;
+
   return `
     <section class="grade-card" data-band="${report.band}">
       <div>
@@ -211,36 +233,46 @@ function renderReport(text: string, report: Report): string {
         <p>${report.wordCount} words · ${report.findings.length} findings · ${report.packs.join(", ")}</p>
       </div>
     </section>
+    ${legend}
     <section class="highlighted-copy">${highlightText(text, report.findings)}</section>
     <section class="findings">
-      ${report.findings.length === 0 ? "<p>No slop signals found.</p>" : report.findings.map(renderFinding).join("")}
+      ${
+        report.findings.length === 0
+          ? "<p>No slop signals found.</p>"
+          : report.findings.map((finding, index) => renderFinding(finding, index)).join("")
+      }
     </section>
   `;
 }
 
 function highlightText(text: string, findings: readonly Finding[]): string {
-  const sorted = [...findings].sort((a, b) => a.span[0] - b.span[0]);
+  const indexed = findings.map((finding, index) => ({ finding, index }));
+  const sorted = [...indexed].sort((a, b) => a.finding.span[0] - b.finding.span[0]);
   let cursor = 0;
   let output = "";
 
-  for (const finding of sorted) {
+  for (const { finding, index } of sorted) {
     const [start, end] = finding.span;
     if (start < cursor) continue;
     output += escapeHtml(text.slice(cursor, start));
-    output += `<mark data-severity="${finding.severity}" title="${escapeHtml(finding.message)}">${escapeHtml(
-      text.slice(start, end),
-    )}</mark>`;
+    output += `<mark data-severity="${finding.severity}" data-finding="${index}" title="${escapeHtml(
+      finding.message,
+    )}">${escapeHtml(text.slice(start, end))}<sup class="finding-badge" aria-hidden="true">${
+      index + 1
+    }</sup></mark>`;
     cursor = end;
   }
 
   return `${output}${escapeHtml(text.slice(cursor))}`.replace(/\n/g, "<br />");
 }
 
-function renderFinding(finding: Finding): string {
+function renderFinding(finding: Finding, index: number): string {
   return `
-    <article class="finding" data-severity="${finding.severity}">
+    <article class="finding" data-severity="${finding.severity}" id="finding-${index}">
       <div>
-        <strong>${escapeHtml(finding.ruleId)}</strong>
+        <strong><span class="finding-number" aria-hidden="true">#${index + 1}</span>${escapeHtml(
+          finding.ruleId,
+        )}</strong>
         <span>${finding.severity}</span>
       </div>
       <p>${escapeHtml(finding.message)}</p>
