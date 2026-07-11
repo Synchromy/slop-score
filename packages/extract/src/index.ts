@@ -13,8 +13,49 @@ export function extractPlainText(input: string): ProseBlock[] {
   return [{ text, source: "paste", startOffset: 0 }];
 }
 
+const MIN_SCOPED_TEXT_LENGTH = 120;
+
 export function extractHtmlText(html: string, url?: string): ProseBlock[] {
-  const text = decodeEntities(
+  const withoutHead = stripHead(html);
+  const scoped = scopeToMainContent(withoutHead);
+
+  let text = cleanupToProse(scoped);
+  if (text.length < MIN_SCOPED_TEXT_LENGTH) {
+    // The scoping heuristic missed the real content (e.g. no <main>/<article>,
+    // or an empty <main> shell) — fall back to the whole head-stripped document
+    // rather than returning empty or truncated prose.
+    text = cleanupToProse(withoutHead);
+  }
+
+  if (!text) return [];
+  return [{ text, source: "url", startOffset: 0, ...(url ? { url } : {}) }];
+}
+
+/** Removes the <head> element (title, meta, etc.) so it never leaks into scored prose. */
+function stripHead(html: string): string {
+  return html.replace(/<head\b[\s\S]*?<\/head>/giu, " ");
+}
+
+/**
+ * Narrows the document to its primary content region when the page marks one:
+ * concatenated <article> blocks, else a single <main> block, else the whole document.
+ * This drops nav/header/footer/menus that live outside the main region even when
+ * they aren't wrapped in a semantic tag we already strip.
+ */
+function scopeToMainContent(html: string): string {
+  const articleMatches = [...html.matchAll(/<article\b[^>]*>([\s\S]*?)<\/article>/giu)];
+  if (articleMatches.length > 0) {
+    return articleMatches.map((match) => match[1] ?? "").join("\n");
+  }
+
+  const mainMatch = html.match(/<main\b[^>]*>([\s\S]*?)<\/main>/iu);
+  if (mainMatch) return mainMatch[1] ?? "";
+
+  return html;
+}
+
+function cleanupToProse(html: string): string {
+  return decodeEntities(
     html
       .replace(/<script\b[\s\S]*?<\/script>/giu, " ")
       .replace(/<style\b[\s\S]*?<\/style>/giu, " ")
@@ -32,9 +73,6 @@ export function extractHtmlText(html: string, url?: string): ProseBlock[] {
       .replace(/\n{3,}/g, "\n\n")
       .trim(),
   );
-
-  if (!text) return [];
-  return [{ text, source: "url", startOffset: 0, ...(url ? { url } : {}) }];
 }
 
 export async function extractUrlText(
