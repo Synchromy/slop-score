@@ -72,6 +72,16 @@ export function createApiServer(options: ApiOptions = {}) {
         );
       }
 
+      if (request.method === "POST" && request.url === "/extract") {
+        if (!authorized(request, options.apiToken))
+          return json(response, 401, { error: "unauthorized" });
+        return json(
+          response,
+          200,
+          await extractRequest(await readJson<{ url?: string }>(request), options.fetch),
+        );
+      }
+
       if (request.method === "POST" && request.url === "/leads") {
         if (!authorized(request, options.apiToken))
           return json(response, 401, { error: "unauthorized" });
@@ -102,6 +112,15 @@ export async function scoreRequest(body: ScoreRequest, fetcher?: FetchLike): Pro
     return analyzeText(blocks.map((block) => block.text).join("\n\n"), { packs });
   }
   throw new Error("text or url is required");
+}
+
+export async function extractRequest(
+  body: { url?: string },
+  fetcher?: FetchLike,
+): Promise<{ text: string; blocks: number }> {
+  if (!body.url?.trim()) throw new Error("url is required");
+  const blocks = await extractUrlText(body.url, fetcher ? { fetch: fetcher } : {});
+  return { text: blocks.map((block) => block.text).join("\n\n"), blocks: blocks.length };
 }
 
 export function captureLead(body: LeadRequest, store: LeadStore = defaultLeadStore): StoredLead {

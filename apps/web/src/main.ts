@@ -4,7 +4,6 @@ import {
   type GradeBand,
   type Report,
 } from "@synchromy/slop-score-engine";
-import { extractUrlText } from "@synchromy/slop-score-extract";
 import type { PackId } from "@synchromy/slop-score-rules";
 
 const sampleText =
@@ -118,9 +117,20 @@ function mount(): void {
     urlButton.disabled = true;
     statusLine.textContent = "Fetching URL";
     try {
-      const blocks = await extractUrlText(url);
-      input.value = blocks.map((block) => block.text).join("\n\n");
-      statusLine.textContent = blocks.length > 0 ? "URL text extracted" : "No prose found";
+      // Fetch + extract server-side (the API has no cross-origin restriction);
+      // a direct browser fetch of an arbitrary site is blocked by CORS.
+      const response = await fetch(`${API_BASE}/extract`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ url }),
+      });
+      if (!response.ok) {
+        const body = (await response.json().catch(() => ({}))) as { error?: string };
+        throw new Error(body.error ?? `extract failed (${response.status})`);
+      }
+      const { text, blocks } = (await response.json()) as { text: string; blocks: number };
+      input.value = text;
+      statusLine.textContent = blocks > 0 ? "URL text extracted" : "No prose found";
       analyze();
     } catch (error) {
       statusLine.textContent = error instanceof Error ? error.message : "URL fetch failed";
