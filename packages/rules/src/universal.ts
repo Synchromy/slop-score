@@ -97,6 +97,15 @@ export const cringePatterns = [
   },
 ] as const;
 
+export const hedgeTerms = [
+  "arguably",
+  "perhaps",
+  "in many ways",
+  "to some extent",
+  "generally speaking",
+  "it could be argued",
+] as const;
+
 const ambiguousKillWords = new Set<string>([
   "showcase",
   "showcasing",
@@ -204,6 +213,58 @@ export const universalRules: SlopRule[] = [
     source: voiceLintSource,
     flags: { splitReview: "accepted-universal" },
   })),
+  {
+    id: "cadence.fragment-staccato",
+    kind: "cadence",
+    severity: "fail",
+    scope: "document",
+    threshold: 3,
+    window: 5,
+    packs: ["universal"],
+    message: "Staccato run: several very short sentences in a row read like false emphasis.",
+    suggestion: "Combine the fragments into one specific sentence with a concrete claim.",
+    source: {
+      repo: "bhattman-dev/synchromy-site",
+      path: "docs/brand-guide/voice.md",
+      note: "Mechanized from the brand-guide ban on fragment/staccato emphasis.",
+    },
+    flags: { splitReview: "accepted-universal" },
+  },
+  {
+    id: "density.forced-threes",
+    kind: "density",
+    severity: "warn",
+    scope: "sentence",
+    threshold: 1,
+    pattern:
+      "\\b[a-z][a-z-]*(?:\\s+[a-z][a-z-]*){0,2},\\s+[a-z][a-z-]*(?:\\s+[a-z][a-z-]*){0,2},\\s+(?:and\\s+)?[a-z][a-z-]*(?:\\s+[a-z][a-z-]*){0,2}\\b",
+    packs: ["universal"],
+    message: "Forced rule-of-three list can make prose sound templated.",
+    suggestion: "Keep the list only if all three items are necessary and specific.",
+    source: {
+      repo: "bhattman-dev/synchromy-site",
+      path: "docs/brand-guide/voice.md",
+      note: "Mechanized from the brand-guide ban on forced threes.",
+    },
+    flags: { splitReview: "accepted-universal" },
+  },
+  {
+    id: "density.hedge-stacking",
+    kind: "density",
+    severity: "warn",
+    scope: "document",
+    threshold: 2,
+    terms: [...hedgeTerms],
+    packs: ["universal"],
+    message: "Hedge-word stacking makes the claim feel evasive.",
+    suggestion: "Cut the hedge or replace it with the concrete condition that matters.",
+    source: {
+      repo: "bhattman-dev/synchromy-site",
+      path: "docs/brand-guide/voice.md",
+      note: "Mechanized from the v1 Slop Score differentiator brief.",
+    },
+    flags: { splitReview: "accepted-universal" },
+  },
 ];
 
 export const universalPack: RulePack = {
