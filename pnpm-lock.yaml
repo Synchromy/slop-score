@@ -33,11 +33,23 @@ importers:
         specifier: ^7.0.4
         version: 7.3.6(@types/node@22.20.0)
 
+  apps/action:
+    dependencies:
+      "@synchromy/slop-score-engine":
+        specifier: workspace:*
+        version: link:../../packages/engine
+      "@synchromy/slop-score-rules":
+        specifier: workspace:*
+        version: link:../../packages/rules
+
   apps/web:
     dependencies:
       "@synchromy/slop-score-engine":
         specifier: workspace:*
         version: link:../../packages/engine
+      "@synchromy/slop-score-extract":
+        specifier: workspace:*
+        version: link:../../packages/extract
       "@synchromy/slop-score-rules":
         specifier: workspace:*
         version: link:../../packages/rules

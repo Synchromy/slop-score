@@ -265,6 +265,56 @@ export const universalRules: SlopRule[] = [
     },
     flags: { splitReview: "accepted-universal" },
   },
+  {
+    id: "density.title-case-nouns",
+    kind: "density",
+    severity: "warn",
+    scope: "document",
+    threshold: 1,
+    pattern: "\\b[A-Z][a-z]+(?:\\s+[A-Z][a-z]+){1,2}\\b",
+    packs: ["universal"],
+    message: "Title-case noun phrase can make invented concepts feel inflated.",
+    suggestion: "Use normal casing unless this is a real product, company, or established term.",
+    source: {
+      repo: "bhattman-dev/synchromy-site",
+      path: "docs/brand-guide/voice.md",
+      note: "Mechanized from the brand-guide title-case noun concern.",
+    },
+    flags: { splitReview: "accepted-universal" },
+  },
+  {
+    id: "padding.ing-tail",
+    kind: "regex",
+    severity: "warn",
+    scope: "sentence",
+    pattern:
+      ",\\s+\\p{L}+ing\\b(?:\\s+\\p{L}+){0,3}(?:,\\s+(?:and\\s+)?\\p{L}+ing\\b(?:\\s+\\p{L}+){0,3})+",
+    packs: ["universal"],
+    message: "Stacked -ing tail adds motion without adding concrete content.",
+    suggestion: "Cut the trailing participial padding or replace it with the actual result.",
+    source: {
+      repo: "bhattman-dev/synchromy-site",
+      path: "docs/brand-guide/voice.md",
+      note: "Mechanized from the brand-guide ban on -ing tails.",
+    },
+    flags: { splitReview: "accepted-universal" },
+  },
+  {
+    id: "emoji.any-advisory",
+    kind: "regex",
+    severity: "warn",
+    scope: "document",
+    pattern: "\\p{Extended_Pictographic}",
+    packs: ["universal"],
+    message: "Emoji can make public copy read casual or engagement-bait shaped.",
+    suggestion: "Keep it only if the target brand voice explicitly wants emoji.",
+    source: {
+      repo: "bhattman-dev/synchromy-site",
+      path: "docs/brand-guide/voice.md",
+      note: "Universal advisory version of the Synchromy strict emoji sweep.",
+    },
+    flags: { splitReview: "accepted-universal" },
+  },
 ];
 
 export const universalPack: RulePack = {
